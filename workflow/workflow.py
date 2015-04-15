@@ -29,6 +29,7 @@ import shutil
 import json
 import cPickle
 import pickle
+import tempfile
 import time
 import logging
 import logging.handlers
@@ -838,9 +839,10 @@ class Settings(dict):
         data = {}
         for key, value in self.items():
             data[key] = value
-        with open(self._filepath, 'wb') as file_obj:
-            json.dump(data, file_obj, sort_keys=True, indent=2,
+        with tempfile.NamedTemporaryFile(dir=os.path.dirname(self._filepath), delete=False) as tmp_file:
+            json.dump(data, tmp_file, sort_keys=True, indent=2,
                       encoding='utf-8')
+        os.rename(tmp_file.name, self._filepath)
 
     # dict methods
     def __setitem__(self, key, value):
