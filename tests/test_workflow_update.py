@@ -78,10 +78,6 @@ def test_update(httpserver):
     def fake(wf):
         return
 
-    with ctx() as (wf, c):
-        wf.run(fake)
-        assert wf.update_available is False
-
     # Mock subprocess.call etc. so the script doesn't try to
     # update the workflow in Alfred
     with fakeresponse(httpserver, DATA_JSON, HTTP_HEADERS_JSON):
@@ -96,6 +92,37 @@ def test_update(httpserver):
 
         update_settings = UPDATE_SETTINGS.copy()
         update_settings['version'] = 'v6.0'
+        with ctx(['workflow:update'], update_settings) as (wf, c):
+            wf.run(fake)
+            wf.args
+
+            # Update command wasn't called
+            assert c.cmd == ()
+
+
+def test_update_with_prereleases(httpserver):
+    """Auto-update installs update with pre-releases enabled"""
+
+    def fake(wf):
+        return
+
+    # Mock subprocess.call etc. so the script doesn't try to
+    # update the workflow in Alfred
+    with fakeresponse(httpserver, DATA_JSON, HTTP_HEADERS_JSON):
+        update_settings = UPDATE_SETTINGS.copy()
+        update_settings['prereleases'] = True
+        with ctx(['workflow:update'], update_settings, clear=False) as (wf, c):
+            wf.run(fake)
+            wf.args
+
+            print('Magic update command : {0!r}'.format(c.cmd))
+
+            assert c.cmd[0] == '/usr/bin/python'
+            assert c.cmd[2] == '__workflow_update_install'
+
+        update_settings = UPDATE_SETTINGS.copy()
+        update_settings['version'] = 'v7.1-beta'
+        update_settings['prereleases'] = True
         with ctx(['workflow:update'], update_settings) as (wf, c):
             wf.run(fake)
             wf.args
